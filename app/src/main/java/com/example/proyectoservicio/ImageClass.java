@@ -32,7 +32,8 @@ import java.util.List;
 public class ImageClass extends AppCompatActivity {
     private List<Mat>mats;
     private List<Bitmap>bitmaps;
-    private List<String>identificadores;
+    private List<Double>_resultados;
+    private Medidor medidor;
     private int cont;
     private TextView textView;
     private ViewFlipper imageFlipper;
@@ -43,11 +44,7 @@ public class ImageClass extends AppCompatActivity {
         setContentView(R.layout.activity_image_class);
         imageFlipper = findViewById( R.id.image_flipper );
         textView = findViewById( R.id.textView);
-        bitmaps = new ArrayList<>();
-        mats = new ArrayList<>();
-        cont=0;
-        toast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
-        identificadores = new ArrayList<>();
+        InicializacionVariables();
         if(!OpenCVLoader.initDebug()) {
             ShowNewMessage("Algo salio mal al cargar Open CV");
         }else{
@@ -62,6 +59,116 @@ public class ImageClass extends AppCompatActivity {
         super.onDestroy();
         LimpiarVariables();
     }
+
+
+    private void classifyImage(Bitmap image)
+    {
+        try {
+            int imageSize = 224;
+            int dimension = Math.min(image.getWidth(), image.getHeight());
+            image = ThumbnailUtils.extractThumbnail(image, dimension, dimension);
+            image = Bitmap.createScaledBitmap(image, imageSize, imageSize,false);
+            Model model = Model.newInstance(getApplicationContext());
+            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 224, 224, 3}, DataType.FLOAT32);
+            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3);
+            byteBuffer.order(ByteOrder.nativeOrder());
+            int[] intValues = new int[imageSize * imageSize];
+            image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
+            int pixel = 0;
+            for (int i = 0; i < imageSize; ++i)
+            {
+                for (int j = 0; j < imageSize; ++j) {
+                    int val = intValues[pixel++]; //RGB
+                    byteBuffer.putFloat(((val >> 16) & 0xFF) * 1.f);
+                    byteBuffer.putFloat(((val >> 8) & 0xFF) * 1.f);
+                    byteBuffer.putFloat((val & 0xFF) * 1.f);
+                }
+            }
+            inputFeature0.loadBuffer(byteBuffer);
+            Model.Outputs outputs = model.process(inputFeature0);
+            TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+            float [] confidences = outputFeature0.getFloatArray();
+            int maxPos = 0;
+            float maxConfidence = 0;
+            for (int i = 0 ; i < confidences.length ; ++i)
+            {
+                if (confidences[i] > maxConfidence)
+                {
+                    maxConfidence = confidences[i];
+                    maxPos = i;
+                }
+            }
+            _resultados.add(medidor.getClasses().get(maxPos));
+            model.close();
+        } catch (IOException e) {
+            ShowNewMessage("No jala");
+        }
+    }
+    private void classifyImage2(Bitmap image)
+    {
+        try {
+            int imageSize = 224;
+            int dimension = Math.min(image.getWidth(), image.getHeight());
+            image = ThumbnailUtils.extractThumbnail(image, dimension, dimension);
+            image = Bitmap.createScaledBitmap(image, imageSize, imageSize,false);
+            Model2 model = Model2.newInstance(getApplicationContext());
+            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 224, 224, 3}, DataType.FLOAT32);
+            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3);
+            byteBuffer.order(ByteOrder.nativeOrder());
+            int[] intValues = new int[imageSize * imageSize];
+            image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
+            int pixel = 0;
+            for (int i = 0; i < imageSize; ++i)
+            {
+                for (int j = 0; j < imageSize; ++j) {
+                    int val = intValues[pixel++]; //RGB
+                    byteBuffer.putFloat(((val >> 16) & 0xFF) * 1.f);
+                    byteBuffer.putFloat(((val >> 8) & 0xFF) * 1.f);
+                    byteBuffer.putFloat((val & 0xFF) * 1.f);
+                }
+            }
+            inputFeature0.loadBuffer(byteBuffer);
+            Model2.Outputs outputs = model.process(inputFeature0);
+            TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+            float [] confidences = outputFeature0.getFloatArray();
+            int maxPos = 0;
+            float maxConfidence = 0;
+            for (int i = 0 ; i < confidences.length ; ++i)
+            {
+                if (confidences[i] > maxConfidence)
+                {
+                    maxConfidence = confidences[i];
+                    maxPos = i;
+                }
+            }
+            _resultados.add(medidor.getClasses().get(maxPos));
+            model.close();
+        } catch (IOException e) {
+            ShowNewMessage("No Jala x2");
+        }
+    }
+
+
+    //------------------------------------------------nuevas funciones
+    private void ObtencionClases(){
+        List<Double>classes = new ArrayList<>();
+        for(double i=0.0;i<10.0;i+=.5){
+            classes.add(i);
+        }
+        medidor.setClasses(classes);
+    }
+    private void InicializacionVariables(){
+        bitmaps = new ArrayList<>();
+        mats = new ArrayList<>();
+        cont=0;
+        toast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
+        _resultados = new ArrayList<>();
+        medidor = new Medidor();
+        ObtencionClases();
+    }
+
+    //-----------------------------------------------------------------
+
 
     @Override
     protected void onResume() {
@@ -107,105 +214,42 @@ public class ImageClass extends AppCompatActivity {
             }
         }
         StringBuilder str = new StringBuilder();
-        for(int i = identificadores.size()-1;i>=0;i--){
-            str.append(identificadores.get(i));
-        }
+        if(!ValidarLecturas(str))
+            ShowNewMessage("Posible medidor descalibrado");
         str.append(" Kw");
         textView.setText(str.toString());
     }
-    private void classifyImage(Bitmap image)
-    {
-        try {
-            int imageSize = 224;
-            int dimension = Math.min(image.getWidth(), image.getHeight());
-            image = ThumbnailUtils.extractThumbnail(image, dimension, dimension);
-            image = Bitmap.createScaledBitmap(image, imageSize, imageSize,false);
-            Model model = Model.newInstance(getApplicationContext());
-            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 224, 224, 3}, DataType.FLOAT32);
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3);
-            byteBuffer.order(ByteOrder.nativeOrder());
-            int[] intValues = new int[imageSize * imageSize];
-            image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
-            int pixel = 0;
-            for (int i = 0; i < imageSize; ++i)
-            {
-                for (int j = 0; j < imageSize; ++j) {
-                    int val = intValues[pixel++]; //RGB
-                    byteBuffer.putFloat(((val >> 16) & 0xFF) * 1.f);
-                    byteBuffer.putFloat(((val >> 8) & 0xFF) * 1.f);
-                    byteBuffer.putFloat((val & 0xFF) * 1.f);
-                }
-            }
-            ArrayList<String>classes = new ArrayList<>();
-            for(int i=0;i<10;i++){
-                classes.add(""+i);
-            }
-            inputFeature0.loadBuffer(byteBuffer);
-            Model.Outputs outputs = model.process(inputFeature0);
-            TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-            float [] confidences = outputFeature0.getFloatArray();
-            int maxPos = 0;
-            float maxConfidence = 0;
-            for (int i = 0 ; i < confidences.length ; ++i)
-            {
-                if (confidences[i] > maxConfidence)
-                {
-                    maxConfidence = confidences[i];
-                    maxPos = i;
-                }
-            }
-            identificadores.add(classes.get(maxPos));
-            model.close();
-        } catch (IOException e) {
-            ShowNewMessage("No jala");
-        }
+    private double SinDecimal(double num){
+        int entero = (int) num;
+        return (double) entero;
     }
-    private void classifyImage2(Bitmap image)
-    {
-        try {
-            int imageSize = 224;
-            int dimension = Math.min(image.getWidth(), image.getHeight());
-            image = ThumbnailUtils.extractThumbnail(image, dimension, dimension);
-            image = Bitmap.createScaledBitmap(image, imageSize, imageSize,false);
-            Model2 model = Model2.newInstance(getApplicationContext());
-            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 224, 224, 3}, DataType.FLOAT32);
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3);
-            byteBuffer.order(ByteOrder.nativeOrder());
-            int[] intValues = new int[imageSize * imageSize];
-            image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
-            int pixel = 0;
-            for (int i = 0; i < imageSize; ++i)
-            {
-                for (int j = 0; j < imageSize; ++j) {
-                    int val = intValues[pixel++]; //RGB
-                    byteBuffer.putFloat(((val >> 16) & 0xFF) * 1.f);
-                    byteBuffer.putFloat(((val >> 8) & 0xFF) * 1.f);
-                    byteBuffer.putFloat((val & 0xFF) * 1.f);
+    private boolean ValidarLecturas(StringBuilder str){
+        //Revision para saber si esta calibrado el medidor(no es tan preciso)
+        boolean band  = true;
+        int sinpuntoflotante = (int) SinDecimal(_resultados.get(0));
+        str.append(""+sinpuntoflotante);
+        for(int i=1;i<_resultados.size();i++){
+            double num     = _resultados.get(i);
+            double numPast = SinDecimal(_resultados.get(i-1));
+            boolean espuntocinco = (num - SinDecimal(num)) == .5? true : false;
+            //------------La condicional primera revisa si el numero debe ser .5 o debe ser entero
+            if(numPast == 8.0 ||numPast == 9.0||numPast == 0.0||numPast == 1.0||numPast == 2.0){
+                if(espuntocinco){
+                    // si en dado caso este no este calibrado el medidor , se tratara de corregir el error
+                    // y se dara aviso
+                    _resultados.set(i,SinDecimal(num)+1);
+                    band=false;
+                }
+            }else{
+                if(!espuntocinco){
+                    _resultados.set(i,SinDecimal(num)+1);
+                    band=false;
                 }
             }
-            ArrayList<String>classes = new ArrayList<>();
-            for(int i=0;i<10;i++){
-                classes.add(""+i);
-            }
-            inputFeature0.loadBuffer(byteBuffer);
-            Model2.Outputs outputs = model.process(inputFeature0);
-            TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-            float [] confidences = outputFeature0.getFloatArray();
-            int maxPos = 0;
-            float maxConfidence = 0;
-            for (int i = 0 ; i < confidences.length ; ++i)
-            {
-                if (confidences[i] > maxConfidence)
-                {
-                    maxConfidence = confidences[i];
-                    maxPos = i;
-                }
-            }
-            identificadores.add(classes.get(maxPos));
-            model.close();
-        } catch (IOException e) {
-            ShowNewMessage("No Jala x2");
+            sinpuntoflotante = (int) SinDecimal(_resultados.get(i));
+            str.append(""+sinpuntoflotante);
         }
+        return band;
     }
 
     //---------------------------Slider
@@ -217,11 +261,11 @@ public class ImageClass extends AppCompatActivity {
         }
     }
     public void CargarSiguiente(View view){
-        if(cont<identificadores.size()){
+        if(cont<_resultados.size()){
             imageFlipper.showNext();
             cont++;
             if(cont != 0){
-                ShowNewMessage("Se leyo "+identificadores.get(cont-1));
+                ShowNewMessage("Se leyo "+_resultados.get(cont-1));
             }
 
         }
@@ -237,18 +281,12 @@ public class ImageClass extends AppCompatActivity {
         }
         return super.onKeyDown(keyCode, event);
     }
-    private void ShowNewMessage(String str){
-        toast.cancel();
-        toast = Toast.makeText(this,str,Toast.LENGTH_SHORT);
-        toast.show();
-    }
     public void CargarPrevio(View view){
         if(cont>0){
             cont--;
             imageFlipper.showPrevious();
         }
     }
-
     //---------------------------Limpiar Variables
     private void LimpiarVariables(){
         for (Mat mat:mats)
@@ -257,6 +295,11 @@ public class ImageClass extends AppCompatActivity {
         }
         mats.clear();
         bitmaps.clear();
-        identificadores.clear();
+        _resultados.clear();
+    }
+    private void ShowNewMessage(String str){
+        toast.cancel();
+        toast = Toast.makeText(this,str,Toast.LENGTH_SHORT);
+        toast.show();
     }
 }

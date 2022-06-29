@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "122228334577",
+    "project_id": "ddlatester",
+    "storage_bucket": "ddlatester.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:122228334577:android:333469e0b44613f3ffae50",
+        "android_client_info": {
+          "package_name": "com.example.proyectoservicio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "122228334577-8id74eh19mdfg0a3al4atjhbd421r2v6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.proyectoservicio",
+            "certificate_hash": "320f47dab4b6a6064e9ef5768a4099358e91868f"
+          }
+        },
+        {
+          "client_id": "122228334577-jeajtopgr5sbfse9cdng832uigojcpiu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUfWnbHmU3lQwDIkWymmmPznWuIKIn2mI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "122228334577-jeajtopgr5sbfse9cdng832uigojcpiu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
