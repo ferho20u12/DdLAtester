@@ -3,6 +3,7 @@ package com.example.proyectoservicio;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.media.ThumbnailUtils;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -21,11 +22,16 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.tensorflow.lite.DataType;
+import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -150,21 +156,14 @@ public class ImageClass extends AppCompatActivity {
 
 
     //------------------------------------------------nuevas funciones
-    private void ObtencionClases(){
-        List<Double>classes = new ArrayList<>();
-        for(double i=0.0;i<10.0;i+=.5){
-            classes.add(i);
-        }
-        medidor.setClasses(classes);
-    }
+
     private void InicializacionVariables(){
         bitmaps = new ArrayList<>();
         mats = new ArrayList<>();
         cont=0;
         toast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
         _resultados = new ArrayList<>();
-        medidor = new Medidor();
-        ObtencionClases();
+        medidor = (Medidor) getIntent().getSerializableExtra("Medidor");
     }
 
     //-----------------------------------------------------------------
@@ -188,29 +187,26 @@ public class ImageClass extends AppCompatActivity {
         Bundle parametros = this.getIntent().getExtras();
         if(parametros !=null) {
             mats.add(new Mat(parametros.getLong("image_outputCrop")));
-            int contCirculos = parametros.getInt("cantCirculos");
-            for (int i = contCirculos - 1; i >= 0; i--) {
+            for (int i = medidor.getCantCirculos() - 1; i >= 0; i--) {
                 mats.add(new Mat(parametros.getLong("image_output" + i)));
             }
             if (mats.get(0) != null) {
                 for (Mat mat : mats) {
                     bitmaps.add(Mat_to_Bitmap(mat));
                 }
-            } else {
-                ShowNewMessage("Error no existe imagen de origen");
             }
         }
-        else
-            ShowNewMessage("Error al cargar Bunble");
     }
     private void IdentificarNumeros(){
         textView.setText("");
         for(int i=1;i<bitmaps.size();i++){
             if(i%2==0){
-                classifyImage2(bitmaps.get(i));
+                //classifyImage2(bitmaps.get(i));
+                Interprete(bitmaps.get(i),medidor.getPathModelReloj());
             }
             else{
-                classifyImage(bitmaps.get(i));
+                //classifyImage(bitmaps.get(i));
+                Interprete(bitmaps.get(i),medidor.getPathModelReloj());
             }
         }
         StringBuilder str = new StringBuilder();
@@ -227,11 +223,11 @@ public class ImageClass extends AppCompatActivity {
         //Revision para saber si esta calibrado el medidor(no es tan preciso)
         boolean band  = true;
         int sinpuntoflotante = (int) SinDecimal(_resultados.get(0));
-        str.append(""+sinpuntoflotante);
+        str.append("").append(sinpuntoflotante);
         for(int i=1;i<_resultados.size();i++){
             double num     = _resultados.get(i);
             double numPast = SinDecimal(_resultados.get(i-1));
-            boolean espuntocinco = (num - SinDecimal(num)) == .5? true : false;
+            boolean espuntocinco = (num - SinDecimal(num)) == .5;
             //------------La condicional primera revisa si el numero debe ser .5 o debe ser entero
             if(numPast == 8.0 ||numPast == 9.0||numPast == 0.0||numPast == 1.0||numPast == 2.0){
                 if(espuntocinco){
@@ -247,7 +243,7 @@ public class ImageClass extends AppCompatActivity {
                 }
             }
             sinpuntoflotante = (int) SinDecimal(_resultados.get(i));
-            str.append(""+sinpuntoflotante);
+            str.append("").append(sinpuntoflotante);
         }
         return band;
     }
@@ -299,7 +295,47 @@ public class ImageClass extends AppCompatActivity {
     }
     private void ShowNewMessage(String str){
         toast.cancel();
-        toast = Toast.makeText(this,str,Toast.LENGTH_SHORT);
+        toast = Toast.makeText(this,str,Toast.LENGTH_LONG);
         toast.show();
+    }
+    private void Interprete(Bitmap image,String path){
+        try (Interpreter interpreter = new Interpreter(new File(path))) {
+            Bitmap bitmap = Bitmap.createScaledBitmap(image, 224, 224, true);
+            ByteBuffer input = ByteBuffer.allocateDirect(224 * 224 * 3 * 4).order(ByteOrder.nativeOrder());
+            for (int y = 0; y < 224; y++) {
+                for (int x = 0; x < 224; x++) {
+                    int px = bitmap.getPixel(x, y);
+                    // Get channel values from the pixel value.
+                    int r = Color.red(px);
+                    int g = Color.green(px);
+                    int b = Color.blue(px);
+                    // Normalize channel values to [-1.0, 1.0]. This requirement depends
+                    // on the model. For example, some models might require values to be
+                    // normalized to the range [0.0, 1.0] instead.
+                    float rf = (r - 127) / 255.0f;
+                    float gf = (g - 127) / 255.0f;
+                    float bf = (b - 127) / 255.0f;
+                    input.putFloat(rf);
+                    input.putFloat(gf);
+                    input.putFloat(bf);
+                }
+            }
+            int bufferSize = 1000 * java.lang.Float.SIZE / java.lang.Byte.SIZE;
+            ByteBuffer modelOutput = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder());
+            interpreter.run(input, modelOutput);
+            modelOutput.rewind();
+            FloatBuffer probabilities = modelOutput.asFloatBuffer();
+            float probability = probabilities.get(0);
+            int mayor = 0;
+            for (int i = 0; i < probabilities.capacity(); i++) {
+                if(probability > probabilities.get(i)){
+                    probability = probabilities.get(i);
+                    mayor = i;
+                }
+            }
+            ShowNewMessage("Interprete:  "+medidor.getClasses().get(mayor));
+            _resultados.add(medidor.getClasses().get(mayor));
+
+        }
     }
 }

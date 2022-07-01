@@ -1,37 +1,59 @@
 package com.example.proyectoservicio;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Medidor {
+public class Medidor implements Serializable {
     private int cantCirculos;
     private List<Double> classes;
     private String nombre;
-    private String urlModelReloj;
-    private String urlModelContraReloj;
+
+    private String nombreModelReloj;
+    private String nombreModelContraReloj;
+    private String pathModelReloj;// este sera el url de nuestro modelo guardado en el local
+    private String pathModelContraReloj;
 
     public Medidor(){
         cantCirculos=0;
         classes = new ArrayList<>();
         nombre = "";
-        urlModelReloj ="";
-        urlModelContraReloj ="";
+        nombreModelReloj ="";
+        nombreModelContraReloj ="";
+        pathModelReloj ="";
+        pathModelContraReloj ="";
+    }
+    public String getNombreModelReloj() {
+        return nombreModelReloj;
     }
 
-    public String getUrlModelReloj() {
-        return urlModelReloj;
+    public void setNombreModelReloj(String nombreModelReloj) {
+        this.nombreModelReloj = nombreModelReloj;
     }
 
-    public void setUrlModelReloj(String urlModelReloj) {
-        this.urlModelReloj = urlModelReloj;
+    public String getNombreModelContraReloj() {
+        return nombreModelContraReloj;
     }
 
-    public String getUrlModelContraReloj() {
-        return urlModelContraReloj;
+    public void setNombreModelContraReloj(String nombreModelContraReloj) {
+        this.nombreModelContraReloj = nombreModelContraReloj;
     }
 
-    public void setUrlModelContraReloj(String urlModelContraReloj) {
-        this.urlModelContraReloj = urlModelContraReloj;
+
+    public String getPathModelReloj() {
+        return pathModelReloj;
+    }
+
+    public void setPathModelReloj(String pathModelReloj) {
+        this.pathModelReloj = pathModelReloj;
+    }
+
+    public String getPathModelContraReloj() {
+        return pathModelContraReloj;
+    }
+
+    public void setPathModelContraReloj(String pathModelContraReloj) {
+        this.pathModelContraReloj = pathModelContraReloj;
     }
     public int getCantCirculos() {
         return cantCirculos;

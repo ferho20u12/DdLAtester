@@ -29,8 +29,9 @@ import java.util.List;
 public class CamaraOpenCV extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2{
     private Intent intent;
     private Mat mRgba,mRgba2,mGray;
-    private  int heightScreen,widthScreen,side,cantCirculos;
+    private  int heightScreen,widthScreen,side;
     private List<Circulo>circulos;
+    private Medidor medidor;
     private Toast toast;
     CameraBridgeViewBase cameraBridgeViewBase;
     BaseLoaderCallback baseLoaderCallback;
@@ -45,14 +46,14 @@ public class CamaraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         cameraBridgeViewBase = findViewById(R.id.CameraView);
         cameraBridgeViewBase.setVisibility(View.VISIBLE);
         cameraBridgeViewBase.setCvCameraViewListener(this);
-        toast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
+        toast = new Toast(this);
         circulos = new ArrayList<>();
         if(checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, 100);
         }else{
             Bundle parametros = this.getIntent().getExtras();
             if(parametros !=null){
-                cantCirculos = parametros.getInt("cantCirculos");
+                medidor = (Medidor) getIntent().getSerializableExtra("Medidor");
                 baseLoaderCallback = new BaseLoaderCallback(this){
                     @Override
                     public void onManagerConnected(int status) {
@@ -188,7 +189,7 @@ public class CamaraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         circulos.clear();
         image_outputCrop = RecortarRectangulo(mGray,new Point(0,(double) heightScreen/4),new Point(widthScreen,(double) (heightScreen/4+side)+20));
         DeteccionDeCiculos(image_outputCrop);
-        if(circulos.size() == cantCirculos ){
+        if(circulos.size() == medidor.getCantCirculos() ){
             BurbujaMejorada();
             List<Mat>mats =new ArrayList<>();
             for(Circulo circulo:circulos){
@@ -201,7 +202,7 @@ public class CamaraOpenCV extends AppCompatActivity implements CameraBridgeViewB
                 mats.add(mat);
             }
             intent.putExtra( "image_outputCrop",image_outputCrop.nativeObj);
-            intent.putExtra("cantCirculos",cantCirculos);
+            intent.putExtra("Medidor",medidor);
             if(!mats.isEmpty()){
                 for(int i = 0; i<mats.size();i++){
                     intent.putExtra( "image_output"+i,mats.get(i).nativeObj);
