@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">ELDMM</string>
+    <string name="app_name">Tester</string>
+    <string name="download_message">Bajar Modelo</string>
+    <string name="no_model">No se a descargado un modelo</string>
 </resources>

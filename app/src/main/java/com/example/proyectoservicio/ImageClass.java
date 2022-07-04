@@ -3,7 +3,6 @@ package com.example.proyectoservicio;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.media.ThumbnailUtils;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -15,20 +14,12 @@ import android.widget.ViewFlipper;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.proyectoservicio.ml.Model;
-import com.example.proyectoservicio.ml.Model2;
-
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
-import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -65,96 +56,6 @@ public class ImageClass extends AppCompatActivity {
         super.onDestroy();
         LimpiarVariables();
     }
-
-
-    private void classifyImage(Bitmap image)
-    {
-        try {
-            int imageSize = 224;
-            int dimension = Math.min(image.getWidth(), image.getHeight());
-            image = ThumbnailUtils.extractThumbnail(image, dimension, dimension);
-            image = Bitmap.createScaledBitmap(image, imageSize, imageSize,false);
-            Model model = Model.newInstance(getApplicationContext());
-            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 224, 224, 3}, DataType.FLOAT32);
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3);
-            byteBuffer.order(ByteOrder.nativeOrder());
-            int[] intValues = new int[imageSize * imageSize];
-            image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
-            int pixel = 0;
-            for (int i = 0; i < imageSize; ++i)
-            {
-                for (int j = 0; j < imageSize; ++j) {
-                    int val = intValues[pixel++]; //RGB
-                    byteBuffer.putFloat(((val >> 16) & 0xFF) * 1.f);
-                    byteBuffer.putFloat(((val >> 8) & 0xFF) * 1.f);
-                    byteBuffer.putFloat((val & 0xFF) * 1.f);
-                }
-            }
-            inputFeature0.loadBuffer(byteBuffer);
-            Model.Outputs outputs = model.process(inputFeature0);
-            TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-            float [] confidences = outputFeature0.getFloatArray();
-            int maxPos = 0;
-            float maxConfidence = 0;
-            for (int i = 0 ; i < confidences.length ; ++i)
-            {
-                if (confidences[i] > maxConfidence)
-                {
-                    maxConfidence = confidences[i];
-                    maxPos = i;
-                }
-            }
-            _resultados.add(medidor.getClasses().get(maxPos));
-            model.close();
-        } catch (IOException e) {
-            ShowNewMessage("No jala");
-        }
-    }
-    private void classifyImage2(Bitmap image)
-    {
-        try {
-            int imageSize = 224;
-            int dimension = Math.min(image.getWidth(), image.getHeight());
-            image = ThumbnailUtils.extractThumbnail(image, dimension, dimension);
-            image = Bitmap.createScaledBitmap(image, imageSize, imageSize,false);
-            Model2 model = Model2.newInstance(getApplicationContext());
-            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 224, 224, 3}, DataType.FLOAT32);
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3);
-            byteBuffer.order(ByteOrder.nativeOrder());
-            int[] intValues = new int[imageSize * imageSize];
-            image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
-            int pixel = 0;
-            for (int i = 0; i < imageSize; ++i)
-            {
-                for (int j = 0; j < imageSize; ++j) {
-                    int val = intValues[pixel++]; //RGB
-                    byteBuffer.putFloat(((val >> 16) & 0xFF) * 1.f);
-                    byteBuffer.putFloat(((val >> 8) & 0xFF) * 1.f);
-                    byteBuffer.putFloat((val & 0xFF) * 1.f);
-                }
-            }
-            inputFeature0.loadBuffer(byteBuffer);
-            Model2.Outputs outputs = model.process(inputFeature0);
-            TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-            float [] confidences = outputFeature0.getFloatArray();
-            int maxPos = 0;
-            float maxConfidence = 0;
-            for (int i = 0 ; i < confidences.length ; ++i)
-            {
-                if (confidences[i] > maxConfidence)
-                {
-                    maxConfidence = confidences[i];
-                    maxPos = i;
-                }
-            }
-            _resultados.add(medidor.getClasses().get(maxPos));
-            model.close();
-        } catch (IOException e) {
-            ShowNewMessage("No Jala x2");
-        }
-    }
-
-
     //------------------------------------------------nuevas funciones
 
     private void InicializacionVariables(){
@@ -200,14 +101,10 @@ public class ImageClass extends AppCompatActivity {
     private void IdentificarNumeros(){
         textView.setText("");
         for(int i=1;i<bitmaps.size();i++){
-            if(i%2==0){
-                //classifyImage2(bitmaps.get(i));
+            if(EsImpar(i))
+                Interprete(bitmaps.get(i),medidor.getPathModelContraReloj());
+            else
                 Interprete(bitmaps.get(i),medidor.getPathModelReloj());
-            }
-            else{
-                //classifyImage(bitmaps.get(i));
-                Interprete(bitmaps.get(i),medidor.getPathModelReloj());
-            }
         }
         StringBuilder str = new StringBuilder();
         if(!ValidarLecturas(str))
@@ -215,9 +112,11 @@ public class ImageClass extends AppCompatActivity {
         str.append(" Kw");
         textView.setText(str.toString());
     }
+    private boolean EsImpar(int num){
+        return num % 2 == 0;
+    }
     private double SinDecimal(double num){
-        int entero = (int) num;
-        return (double) entero;
+        return (int) num;
     }
     private boolean ValidarLecturas(StringBuilder str){
         //Revision para saber si esta calibrado el medidor(no es tan preciso)
@@ -242,12 +141,10 @@ public class ImageClass extends AppCompatActivity {
                     band=false;
                 }
             }
-            sinpuntoflotante = (int) SinDecimal(_resultados.get(i));
-            str.append("").append(sinpuntoflotante);
+            str.append("").append((int) SinDecimal(_resultados.get(i)));
         }
         return band;
     }
-
     //---------------------------Slider
     private void CargarSlider(){
         for (Bitmap bmp:bitmaps) {
@@ -300,27 +197,32 @@ public class ImageClass extends AppCompatActivity {
     }
     private void Interprete(Bitmap image,String path){
         try (Interpreter interpreter = new Interpreter(new File(path))) {
-            Bitmap bitmap = Bitmap.createScaledBitmap(image, 224, 224, true);
-            ByteBuffer input = ByteBuffer.allocateDirect(224 * 224 * 3 * 4).order(ByteOrder.nativeOrder());
+            Bitmap bitmap = Bitmap.createScaledBitmap(image, 224, 224, false);
+            ByteBuffer input = ByteBuffer.allocateDirect(4 * 224 * 224 * 3).order(ByteOrder.nativeOrder());
+            int dimension = Math.min(bitmap.getWidth(), bitmap.getHeight());
+            bitmap= ThumbnailUtils.extractThumbnail(image, dimension, dimension);
             for (int y = 0; y < 224; y++) {
                 for (int x = 0; x < 224; x++) {
                     int px = bitmap.getPixel(x, y);
                     // Get channel values from the pixel value.
-                    int r = Color.red(px);
-                    int g = Color.green(px);
-                    int b = Color.blue(px);
+                    //int r = Color.red(px);
+                    //int g = Color.green(px);
+                    //int b = Color.blue(px);
+                    //float rf = (r - 127) / 1.0f;
+                    //float gf = (g - 127) / 1.0f;
+                    //float bf = (b - 127) / 1.0f;
                     // Normalize channel values to [-1.0, 1.0]. This requirement depends
                     // on the model. For example, some models might require values to be
                     // normalized to the range [0.0, 1.0] instead.
-                    float rf = (r - 127) / 255.0f;
-                    float gf = (g - 127) / 255.0f;
-                    float bf = (b - 127) / 255.0f;
+                    float rf = ((px >> 16) & 0xFF) * 1.f;
+                    float gf = ((px >> 8) & 0xFF) * 1.f;
+                    float bf = (px & 0xFF) * 1.f;
                     input.putFloat(rf);
                     input.putFloat(gf);
                     input.putFloat(bf);
                 }
             }
-            int bufferSize = 1000 * java.lang.Float.SIZE / java.lang.Byte.SIZE;
+            int bufferSize = 10 * Float.SIZE / Byte.SIZE;
             ByteBuffer modelOutput = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder());
             interpreter.run(input, modelOutput);
             modelOutput.rewind();
@@ -333,9 +235,7 @@ public class ImageClass extends AppCompatActivity {
                     mayor = i;
                 }
             }
-            ShowNewMessage("Interprete:  "+medidor.getClasses().get(mayor));
             _resultados.add(medidor.getClasses().get(mayor));
-
         }
     }
 }

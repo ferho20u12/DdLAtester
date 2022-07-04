@@ -1,12 +1,11 @@
 package com.example.proyectoservicio;
 
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
+
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -48,25 +47,22 @@ public class CamaraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         cameraBridgeViewBase.setCvCameraViewListener(this);
         toast = new Toast(this);
         circulos = new ArrayList<>();
-        if(checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.CAMERA}, 100);
-        }else{
-            Bundle parametros = this.getIntent().getExtras();
-            if(parametros !=null){
-                medidor = (Medidor) getIntent().getSerializableExtra("Medidor");
-                baseLoaderCallback = new BaseLoaderCallback(this){
-                    @Override
-                    public void onManagerConnected(int status) {
+        Bundle parametros = this.getIntent().getExtras();
+        if(parametros !=null){
+            medidor = (Medidor) getIntent().getSerializableExtra("Medidor");
+            baseLoaderCallback = new BaseLoaderCallback(this){
+                @Override
+                public void onManagerConnected(int status) {
+                    super.onManagerConnected(status);
+                    if (status == BaseLoaderCallback.SUCCESS) {
+                        cameraBridgeViewBase.enableView();
+                    } else {
                         super.onManagerConnected(status);
-                        if (status == BaseLoaderCallback.SUCCESS) {
-                            cameraBridgeViewBase.enableView();
-                        } else {
-                            super.onManagerConnected(status);
-                        }
                     }
-                };
-            }
+                }
+            };
         }
+
     }
 
     @Override
