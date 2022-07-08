@@ -1,9 +1,10 @@
 package com.example.proyectoservicio;
 
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.media.ThumbnailUtils;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -98,53 +99,22 @@ public class ImageClass extends AppCompatActivity {
             }
         }
     }
+    @SuppressLint("SetTextI18n")
     private void IdentificarNumeros(){
         textView.setText("");
         for(int i=1;i<bitmaps.size();i++){
             if(EsImpar(i))
-                Interprete(bitmaps.get(i),medidor.getPathModelContraReloj());
+                Interprete(bitmaps.get(i),medidor.getModelFileContraReloj());
             else
-                Interprete(bitmaps.get(i),medidor.getPathModelReloj());
+                Interprete(bitmaps.get(i),medidor.getModelFileReloj());
         }
-        StringBuilder str = new StringBuilder();
-        if(!ValidarLecturas(str))
-            ShowNewMessage("Posible medidor descalibrado");
-        str.append(" Kw");
-        textView.setText(str.toString());
+
+        textView.setText(""+_resultados);
     }
     private boolean EsImpar(int num){
         return num % 2 == 0;
     }
-    private double SinDecimal(double num){
-        return (int) num;
-    }
-    private boolean ValidarLecturas(StringBuilder str){
-        //Revision para saber si esta calibrado el medidor(no es tan preciso)
-        boolean band  = true;
-        int sinpuntoflotante = (int) SinDecimal(_resultados.get(0));
-        str.append("").append(sinpuntoflotante);
-        for(int i=1;i<_resultados.size();i++){
-            double num     = _resultados.get(i);
-            double numPast = SinDecimal(_resultados.get(i-1));
-            boolean espuntocinco = (num - SinDecimal(num)) == .5;
-            //------------La condicional primera revisa si el numero debe ser .5 o debe ser entero
-            if(numPast == 8.0 ||numPast == 9.0||numPast == 0.0||numPast == 1.0||numPast == 2.0){
-                if(espuntocinco){
-                    // si en dado caso este no este calibrado el medidor , se tratara de corregir el error
-                    // y se dara aviso
-                    _resultados.set(i,SinDecimal(num)+1);
-                    band=false;
-                }
-            }else{
-                if(!espuntocinco){
-                    _resultados.set(i,SinDecimal(num)+1);
-                    band=false;
-                }
-            }
-            str.append("").append((int) SinDecimal(_resultados.get(i)));
-        }
-        return band;
-    }
+
     //---------------------------Slider
     private void CargarSlider(){
         for (Bitmap bmp:bitmaps) {
@@ -195,44 +165,43 @@ public class ImageClass extends AppCompatActivity {
         toast = Toast.makeText(this,str,Toast.LENGTH_LONG);
         toast.show();
     }
-    private void Interprete(Bitmap image,String path){
-        try (Interpreter interpreter = new Interpreter(new File(path))) {
-            Bitmap bitmap = Bitmap.createScaledBitmap(image, 224, 224, false);
-            ByteBuffer input = ByteBuffer.allocateDirect(4 * 224 * 224 * 3).order(ByteOrder.nativeOrder());
-            int dimension = Math.min(bitmap.getWidth(), bitmap.getHeight());
-            bitmap= ThumbnailUtils.extractThumbnail(image, dimension, dimension);
+    private void Interprete(Bitmap inputImage,File modelFile){
+        if(modelFile == null){
+            ShowNewMessage("Error archivo");
+            return;
+        }
+        try (Interpreter interpreter = new Interpreter(modelFile)) {
+            Bitmap bitmap = Bitmap.createScaledBitmap(inputImage, 224, 224, false);
+            ByteBuffer input = ByteBuffer.allocateDirect(224 * 224 * 3 * 4).order(ByteOrder.nativeOrder());
             for (int y = 0; y < 224; y++) {
                 for (int x = 0; x < 224; x++) {
                     int px = bitmap.getPixel(x, y);
+
                     // Get channel values from the pixel value.
-                    //int r = Color.red(px);
-                    //int g = Color.green(px);
-                    //int b = Color.blue(px);
-                    //float rf = (r - 127) / 1.0f;
-                    //float gf = (g - 127) / 1.0f;
-                    //float bf = (b - 127) / 1.0f;
-                    // Normalize channel values to [-1.0, 1.0]. This requirement depends
-                    // on the model. For example, some models might require values to be
-                    // normalized to the range [0.0, 1.0] instead.
-                    float rf = ((px >> 16) & 0xFF) * 1.f;
-                    float gf = ((px >> 8) & 0xFF) * 1.f;
-                    float bf = (px & 0xFF) * 1.f;
+                    int r = Color.red(px);
+                    int g = Color.green(px);
+                    int b = Color.blue(px);
+                    float rf = (r - 127);
+                    float gf = (g - 127);
+                    float bf = (b - 127);
+
                     input.putFloat(rf);
                     input.putFloat(gf);
                     input.putFloat(bf);
                 }
             }
-            int bufferSize = 10 * Float.SIZE / Byte.SIZE;
+            int bufferSize = 10 * java.lang.Float.SIZE / java.lang.Byte.SIZE;
             ByteBuffer modelOutput = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder());
             interpreter.run(input, modelOutput);
             modelOutput.rewind();
             FloatBuffer probabilities = modelOutput.asFloatBuffer();
-            float probability = probabilities.get(0);
             int mayor = 0;
+            float probabilidadMayor= 0;
             for (int i = 0; i < probabilities.capacity(); i++) {
-                if(probability > probabilities.get(i)){
-                    probability = probabilities.get(i);
-                    mayor = i;
+                if(probabilidadMayor < probabilities.get(i))
+                {
+                    mayor=i;
+                    probabilidadMayor = probabilities.get(i);
                 }
             }
             _resultados.add(medidor.getClasses().get(mayor));

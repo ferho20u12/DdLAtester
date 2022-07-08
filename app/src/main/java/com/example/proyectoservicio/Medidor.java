@@ -1,5 +1,6 @@
 package com.example.proyectoservicio;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,8 +12,8 @@ public class Medidor implements Serializable {
 
     private String nombreModelReloj;
     private String nombreModelContraReloj;
-    private String pathModelReloj;// este sera el url de nuestro modelo guardado en el local
-    private String pathModelContraReloj;
+    private File modelFileReloj;
+    private File modelFileContraReloj;
 
     public Medidor(){
         cantCirculos=0;
@@ -20,8 +21,22 @@ public class Medidor implements Serializable {
         nombre = "";
         nombreModelReloj ="";
         nombreModelContraReloj ="";
-        pathModelReloj ="";
-        pathModelContraReloj ="";
+
+    }
+    public File getModelFileReloj() {
+        return modelFileReloj;
+    }
+
+    public void setModelFileReloj(File modelFileReloj) {
+        this.modelFileReloj = modelFileReloj;
+    }
+
+    public File getModelFileContraReloj() {
+        return modelFileContraReloj;
+    }
+
+    public void setModelFileContraReloj(File modelFileContraReloj) {
+        this.modelFileContraReloj = modelFileContraReloj;
     }
     public String getNombreModelReloj() {
         return nombreModelReloj;
@@ -37,23 +52,6 @@ public class Medidor implements Serializable {
 
     public void setNombreModelContraReloj(String nombreModelContraReloj) {
         this.nombreModelContraReloj = nombreModelContraReloj;
-    }
-
-
-    public String getPathModelReloj() {
-        return pathModelReloj;
-    }
-
-    public void setPathModelReloj(String pathModelReloj) {
-        this.pathModelReloj = pathModelReloj;
-    }
-
-    public String getPathModelContraReloj() {
-        return pathModelContraReloj;
-    }
-
-    public void setPathModelContraReloj(String pathModelContraReloj) {
-        this.pathModelContraReloj = pathModelContraReloj;
     }
     public int getCantCirculos() {
         return cantCirculos;

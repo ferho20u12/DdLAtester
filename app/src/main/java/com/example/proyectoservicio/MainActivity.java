@@ -73,13 +73,14 @@ public class MainActivity extends AppCompatActivity {
                     ShowNewMessage("No se pudo conectar con la base de datos");
                 }
                 else {
-                    ShowNewMessage("Conectado");
+                    medidor.setNombre("MedidorDePrueba");
                     medidor.setCantCirculos(Integer.parseInt(String.valueOf(task.getResult().child("CantidadCirculos").getValue())));
                     medidor.setNombreModelReloj(String.valueOf(task.getResult().child("nombreModelReloj").getValue()));
                     medidor.setNombreModelContraReloj(String.valueOf(task.getResult().child("nombreModelContraReloj").getValue()));
                     ObtencionClases();
                     CargarModeloReloj(medidor.getNombreModelReloj());
-                    CargarModeloContraReloj(medidor.getNombreModelReloj());
+                    CargarModeloContraReloj(medidor.getNombreModelContraReloj());
+                    ShowNewMessage("Datos Cargados");
                 }
             }
         });
@@ -93,27 +94,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private void CargarModeloReloj(String nombreModelo){
         CustomModelDownloadConditions conditions = new CustomModelDownloadConditions.Builder()
-            .requireWifi()
-            .build();
-        FirebaseModelDownloader.getInstance()
-            .getModel(nombreModelo, DownloadType.LATEST_MODEL, conditions)
-            .addOnSuccessListener(new OnSuccessListener<CustomModel>() {
-                @Override
-                public void onSuccess(CustomModel model) {
-                    File modelFile = model.getFile();
-                    if(modelFile != null){
-                        medidor.setPathModelReloj(model.getLocalFilePath());
-                        saveState();
-                        ShowNewMessage("Modelo "+model.getName()+" guardado con exito");
-                    }else{
-                        ShowNewMessage("Modelo no encontrado");
-                    }
-                }
-            });
-    }
-    private void CargarModeloContraReloj(String nombreModelo){
-        CustomModelDownloadConditions conditions = new CustomModelDownloadConditions.Builder()
-                .requireWifi()
+                .requireWifi()  // Also possible: .requireCharging() and .requireDeviceIdle()
                 .build();
         FirebaseModelDownloader.getInstance()
                 .getModel(nombreModelo, DownloadType.LOCAL_MODEL_UPDATE_IN_BACKGROUND, conditions)
@@ -121,16 +102,33 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(CustomModel model) {
                         File modelFile = model.getFile();
-                        if(modelFile != null){
-                            medidor.setPathModelContraReloj(modelFile.getPath());
+                        if (modelFile != null) {
+                            medidor.setModelFileReloj(modelFile);
                             saveState();
-                            ShowNewMessage("Modelo "+model.getName()+" guardado con exito");
-                        }else{
-                            ShowNewMessage("Modelo no encontrado");
+                            ShowNewMessage("Modelo actualizado");
                         }
                     }
                 });
     }
+    private void CargarModeloContraReloj(String nombreModelo){
+        CustomModelDownloadConditions conditions = new CustomModelDownloadConditions.Builder()
+                .requireWifi()  // Also possible: .requireCharging() and .requireDeviceIdle()
+                .build();
+        FirebaseModelDownloader.getInstance()
+                .getModel(nombreModelo, DownloadType.LOCAL_MODEL_UPDATE_IN_BACKGROUND, conditions)
+                .addOnSuccessListener(new OnSuccessListener<CustomModel>() {
+                    @Override
+                    public void onSuccess(CustomModel model) {
+                        File modelFile = model.getFile();
+                        if (modelFile != null) {
+                            medidor.setModelFileContraReloj(modelFile);
+                            saveState();
+                            ShowNewMessage("Modelo actualizado");
+                        }
+                    }
+                });
+    }
+
     private void ShowNewMessage(String str){
         toast.cancel();
         toast = Toast.makeText(this,str,Toast.LENGTH_LONG);
