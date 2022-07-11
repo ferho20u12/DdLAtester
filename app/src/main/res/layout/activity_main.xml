@@ -45,7 +45,7 @@
         android:layout_marginBottom="6dp"
         android:background="@drawable/camera"
         android:clickable="true"
-        android:onClick="CallWindowCamara"
+        android:onClick="callWindowCamera"
         tools:ignore="ContentDescription,KeyboardInaccessibleWidget,UsingOnClickInXml,SpeakableTextPresentCheck" />
 
     <Button
@@ -57,7 +57,7 @@
         android:layout_marginEnd="30dp"
         android:background="@drawable/ic_download"
         android:clickable="true"
-        android:onClick="CargarModelo"
+        android:onClick="loadModel"
         tools:ignore="ContentDescription,KeyboardInaccessibleWidget,UsingOnClickInXml,SpeakableTextPresentCheck" />
 
 </RelativeLayout>

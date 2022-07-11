@@ -15,14 +15,8 @@ public class Medidor implements Serializable {
     private File modelFileReloj;
     private File modelFileContraReloj;
 
-    public Medidor(){
-        cantCirculos=0;
-        classes = new ArrayList<>();
-        nombre = "";
-        nombreModelReloj ="";
-        nombreModelContraReloj ="";
+    public Medidor(){classes = new ArrayList<>();}
 
-    }
     public File getModelFileReloj() {
         return modelFileReloj;
     }

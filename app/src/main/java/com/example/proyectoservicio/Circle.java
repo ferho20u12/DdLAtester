@@ -2,11 +2,11 @@ package com.example.proyectoservicio;
 
 import org.opencv.core.Point;
 
-public class Circulo {
+public class Circle {
     private Point center;
     private int radius;
 
-    public Circulo(Point center,int radius){
+    public Circle(Point center, int radius){
         this.setCenter(center);
         this.setRadius(radius);
     }

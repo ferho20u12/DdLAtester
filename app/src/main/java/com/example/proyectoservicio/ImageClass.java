@@ -4,13 +4,11 @@ package com.example.proyectoservicio;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,12 +28,12 @@ import java.util.List;
 public class ImageClass extends AppCompatActivity {
     private List<Mat>mats;
     private List<Bitmap>bitmaps;
-    private List<Double>_resultados;
+    private List<Double> outputs;
     private Medidor medidor;
-    private int cont;
+    private int indexFlipper;
     private TextView textView;
     private ViewFlipper imageFlipper;
-    private Toast toast;
+    private Message message;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,7 +42,7 @@ public class ImageClass extends AppCompatActivity {
         textView = findViewById( R.id.textView);
         InicializacionVariables();
         if(!OpenCVLoader.initDebug()) {
-            ShowNewMessage("Algo salio mal al cargar Open CV");
+            message.ShowNewMessage("Algo salio mal al cargar Open CV");
         }else{
             Obtencion_Imagenes();
             CargarSlider();
@@ -62,9 +60,9 @@ public class ImageClass extends AppCompatActivity {
     private void InicializacionVariables(){
         bitmaps = new ArrayList<>();
         mats = new ArrayList<>();
-        cont=0;
-        toast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
-        _resultados = new ArrayList<>();
+        indexFlipper =0;
+        message = new Message(this);
+        outputs = new ArrayList<>();
         medidor = (Medidor) getIntent().getSerializableExtra("Medidor");
     }
 
@@ -109,7 +107,7 @@ public class ImageClass extends AppCompatActivity {
                 Interprete(bitmaps.get(i),medidor.getModelFileReloj());
         }
 
-        textView.setText(""+_resultados);
+        textView.setText(""+ outputs);
     }
     private boolean EsImpar(int num){
         return num % 2 == 0;
@@ -124,11 +122,11 @@ public class ImageClass extends AppCompatActivity {
         }
     }
     public void CargarSiguiente(View view){
-        if(cont<_resultados.size()){
+        if(indexFlipper < outputs.size()){
             imageFlipper.showNext();
-            cont++;
-            if(cont != 0){
-                ShowNewMessage("Se leyo "+_resultados.get(cont-1));
+            indexFlipper++;
+            if(indexFlipper != 0){
+                message.ShowNewMessage("Se leyo "+ outputs.get(indexFlipper -1));
             }
 
         }
@@ -145,8 +143,8 @@ public class ImageClass extends AppCompatActivity {
         return super.onKeyDown(keyCode, event);
     }
     public void CargarPrevio(View view){
-        if(cont>0){
-            cont--;
+        if(indexFlipper >0){
+            indexFlipper--;
             imageFlipper.showPrevious();
         }
     }
@@ -158,16 +156,11 @@ public class ImageClass extends AppCompatActivity {
         }
         mats.clear();
         bitmaps.clear();
-        _resultados.clear();
-    }
-    private void ShowNewMessage(String str){
-        toast.cancel();
-        toast = Toast.makeText(this,str,Toast.LENGTH_LONG);
-        toast.show();
+        outputs.clear();
     }
     private void Interprete(Bitmap inputImage,File modelFile){
         if(modelFile == null){
-            ShowNewMessage("Error archivo");
+            message.ShowNewMessage("Error archivo");
             return;
         }
         try (Interpreter interpreter = new Interpreter(modelFile)) {
@@ -177,17 +170,10 @@ public class ImageClass extends AppCompatActivity {
                 for (int x = 0; x < 224; x++) {
                     int px = bitmap.getPixel(x, y);
 
-                    // Get channel values from the pixel value.
-                    int r = Color.red(px);
-                    int g = Color.green(px);
-                    int b = Color.blue(px);
-                    float rf = (r - 127);
-                    float gf = (g - 127);
-                    float bf = (b - 127);
+                    input.putFloat(((px >> 16) & 0xFF) * 1.f);
+                    input.putFloat(((px >> 8) & 0xFF) * 1.f);
+                    input.putFloat((px & 0xFF) * 1.f);
 
-                    input.putFloat(rf);
-                    input.putFloat(gf);
-                    input.putFloat(bf);
                 }
             }
             int bufferSize = 10 * java.lang.Float.SIZE / java.lang.Byte.SIZE;
@@ -204,7 +190,7 @@ public class ImageClass extends AppCompatActivity {
                     probabilidadMayor = probabilities.get(i);
                 }
             }
-            _resultados.add(medidor.getClasses().get(mayor));
+            outputs.add(medidor.getClasses().get(mayor));
         }
     }
 }
