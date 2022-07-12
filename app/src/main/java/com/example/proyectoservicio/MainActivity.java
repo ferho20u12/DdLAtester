@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         message = new Message(this);
         localFile = new LocalFile(Environment.getExternalStorageDirectory(),"/");
-        medidor = localFile.cargarMedidor();
+        medidor = localFile.loadMedidor();
 
         int PERMISSION_ALL = 1;
         String[] PERMISSIONS = {

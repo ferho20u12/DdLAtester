@@ -16,7 +16,7 @@ public class LocalFile {
         this.parent = parent;
 
     }
-    public void guardaMedidor(Medidor medidor) {
+    public void saveMedidor(Medidor medidor) {
         FileOutputStream outStream;
         try {
             File f = new File(parent,path+"medidor.dat");
@@ -28,7 +28,7 @@ public class LocalFile {
             e1.printStackTrace();
         }
     }
-    public Medidor cargarMedidor()
+    public Medidor loadMedidor()
     {
         FileInputStream inStream;
         try {
@@ -43,7 +43,7 @@ public class LocalFile {
         }
         return null;
     }
-    public void guardaMedidores(List<Medidor>medidores) {
+    public void saveMedidores(List<Medidor>medidores) {
         FileOutputStream outStream;
         try {
             File f = new File(parent,path+"medidores.dat");
@@ -55,7 +55,7 @@ public class LocalFile {
             e1.printStackTrace();
         }
     }
-    public List<Medidor> cargarMedidores()
+    public List<Medidor> loadMedidores()
     {
         FileInputStream inStream;
         try {

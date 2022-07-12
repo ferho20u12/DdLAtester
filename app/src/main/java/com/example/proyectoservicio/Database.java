@@ -26,6 +26,7 @@ public class Database {
         this.localFile = localFile;
         this.message = message;
     }
+
     public Medidor getMedidor() {
         return medidor;
     }
@@ -68,7 +69,7 @@ public class Database {
                         File modelFile = model.getFile();
                         if (modelFile != null) {
                             medidor.setModelFileReloj(modelFile);
-                            localFile.guardaMedidor(medidor);
+                            localFile.saveMedidor(medidor);
                         }
                     }
                 });
@@ -85,7 +86,7 @@ public class Database {
                         File modelFile = model.getFile();
                         if (modelFile != null) {
                             medidor.setModelFileContraReloj(modelFile);
-                            localFile.guardaMedidor(medidor);
+                            localFile.saveMedidor(medidor);
                         }
                     }
                 });
